@@ -1,17 +1,2 @@
-{
-  "name": "nicori-study-room",
-  "version": "1.0.0",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
-  },
-  "devDependencies": {
-    "vite": "^5.0.0",
-    "@vitejs/plugin-react": "^4.0.0"
-  }
-}
+# ニコリ自習室 座席確認ツール
+韮崎市民交流センター ニコリの自習室向け座席予約・空き状況確認Webアプリ
