@@ -3,14 +3,23 @@ import { useState } from "react";
 const TOTAL_SEATS = 30;
 const ADMIN_PASSWORD = "nicori2024"; // 施設側だけが知るパスワード
 
-const DEMO_TAKEN = { demo1: 3, demo2: 7, demo3: 12, demo4: 15, demo5: 21, demo6: 28 };
+// 実際の自習室の座席レイアウト（3行 × 2ブロック、各5席）
+// 表示は上段から: [2-21〜2-25][2-26〜2-30] / [2-10〜2-06][2-20〜2-16] / [2-01〜2-05][2-11〜2-15]
+const SEAT_LAYOUT = [
+  ["2-21", "2-22", "2-23", "2-24", "2-25", "2-26", "2-27", "2-28", "2-29", "2-30"],
+  ["2-10", "2-09", "2-08", "2-07", "2-06", "2-20", "2-19", "2-18", "2-17", "2-16"],
+  ["2-01", "2-02", "2-03", "2-04", "2-05", "2-11", "2-12", "2-13", "2-14", "2-15"],
+];
+const SEAT_IDS = SEAT_LAYOUT.flat(); // 表示順そのままのID一覧（30席）
+
+const DEMO_TAKEN = { demo1: "2-03", demo2: "2-08", demo3: "2-14", demo4: "2-19", demo5: "2-25", demo6: "2-29" };
 const DEMO_USERS = [
-  { name: "田中 れん", phone: "090-1234-5678", school: "韮崎高校", age: "18", status: "高校生", checkinTime: "13:42" },
-  { name: "佐藤 花子", phone: "090-0000-0001", school: "北杜高校", age: "17", status: "高校生", checkinTime: "14:05" },
-  { name: "山田 太郎", phone: "090-0000-0002", school: "韮崎高校", age: "16", status: "高校生", checkinTime: "14:20" },
-  { name: "鈴木 あい", phone: "090-0000-0003", school: "韮崎市立中学校", age: "15", status: "中学生", checkinTime: "14:33" },
-  { name: "高橋 健", phone: "090-0000-0004", school: "名古屋大学", age: "18", status: "大学生", checkinTime: "15:01" },
-  { name: "伊藤 さくら", phone: "090-0000-0005", school: "北杜高校", age: "17", status: "高校生", checkinTime: "15:10" },
+  { name: "田中 れん", phone: "090-1234-5678", school: "韮崎高校", status: "高校生", checkinTime: "13:42" },
+  { name: "佐藤 花子", phone: "090-0000-0001", school: "北杜高校", status: "高校生", checkinTime: "14:05" },
+  { name: "山田 太郎", phone: "090-0000-0002", school: "韮崎高校", status: "高校生", checkinTime: "14:20" },
+  { name: "鈴木 あい", phone: "090-0000-0003", school: "韮崎市立中学校", status: "中学生", checkinTime: "14:33" },
+  { name: "高橋 健", phone: "090-0000-0004", school: "名古屋大学", status: "大学生", checkinTime: "15:01" },
+  { name: "伊藤 さくら", phone: "090-0000-0005", school: "北杜高校", status: "高校生", checkinTime: "15:10" },
 ];
 
 export default function App() {
@@ -24,7 +33,6 @@ export default function App() {
   const [regName, setRegName] = useState("");
   const [regPhone, setRegPhone] = useState("");
   const [regSchool, setRegSchool] = useState("");
-  const [regAge, setRegAge] = useState("");
   const [regStatus, setRegStatus] = useState("");
   const [error, setError] = useState("");
   const [adminPass, setAdminPass] = useState("");
@@ -47,11 +55,11 @@ export default function App() {
     setCurrentUser(u); setError(""); setLoginPhone(""); setScreen("main");
   }
   function doRegister() {
-    if (!regName || !regPhone || !regSchool || !regAge || !regStatus) { setError("すべて入力してください"); return; }
+    if (!regName || !regPhone || !regSchool || !regStatus) { setError("すべて入力してください"); return; }
     if (users.find(u => u.phone === regPhone.trim())) { setError("この電話番号はすでに登録されています"); return; }
-    const u = { name: regName.trim(), phone: regPhone.trim(), school: regSchool.trim(), age: regAge, status: regStatus };
+    const u = { name: regName.trim(), phone: regPhone.trim(), school: regSchool.trim(), status: regStatus };
     setUsers(prev => [...prev, u]); setCurrentUser(u); setError("");
-    setRegName(""); setRegPhone(""); setRegSchool(""); setRegAge(""); setRegStatus("");
+    setRegName(""); setRegPhone(""); setRegSchool(""); setRegStatus("");
     setScreen("main");
   }
   function doLogout() {
@@ -67,8 +75,8 @@ export default function App() {
     setTaken(prev => { const n = { ...prev }; delete n[currentUser.phone]; return n; });
     setSelectedSeat(null);
   }
-  function seatStatus(i) {
-    const owner = Object.keys(taken).find(p => taken[p] === i);
+  function seatStatus(seatId) {
+    const owner = Object.keys(taken).find(p => taken[p] === seatId);
     if (!owner) return "empty";
     if (currentUser && owner === currentUser.phone) return "mine";
     return "taken";
@@ -100,9 +108,10 @@ export default function App() {
     userBadge: { display: "flex", alignItems: "center", gap: 10, paddingBottom: 14, borderBottom: "0.5px solid #e0ddd5", marginBottom: 16 },
     avatar: { width: 36, height: 36, borderRadius: "50%", background: "#E6F1FB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 500, color: "#185FA5", flexShrink: 0 },
     sectionTitle: { fontSize: 12, fontWeight: 500, color: "#888780", marginBottom: 10 },
-    seatGrid: { display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 7, marginBottom: 14 },
+    seatGrid: { display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 },
+    seatBlockRow: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 8 },
     seat: (st, sel) => {
-      const base = { aspectRatio: "1", borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, fontSize: 11, fontWeight: 500, cursor: st === "taken" ? "not-allowed" : "pointer", transition: "all 0.12s", border: "0.5px solid" };
+      const base = { aspectRatio: "1", borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, fontSize: 9.5, fontWeight: 500, cursor: st === "taken" ? "not-allowed" : "pointer", transition: "all 0.12s", border: "0.5px solid" };
       if (st === "mine") return { ...base, background: "#EAF3DE", borderColor: "#3B6D11", color: "#3B6D11" };
       if (st === "taken") return { ...base, background: "#FCEBEB", borderColor: "#F09595", color: "#A32D2D" };
       if (sel) return { ...base, background: "#E6F1FB", borderColor: "#378ADD", color: "#185FA5", border: "2px solid #378ADD" };
@@ -117,7 +126,49 @@ export default function App() {
     barFill: { height: "100%", borderRadius: 4, background: fillColor, width: pct + "%", transition: "width 0.4s ease" },
   };
 
-  // ── 管理者ログイン画面 ──────────────────────────────────────────────────
+  // 実際の自習室レイアウトに合わせた座席マップ（2ブロック×3行×5席）
+  function renderSeatMap({ selectable, adminView }) {
+    return (
+      <div style={{ marginBottom: 14 }}>
+        {SEAT_LAYOUT.map((row, rowIdx) => {
+          const leftBlock = row.slice(0, 5);
+          const rightBlock = row.slice(5, 10);
+          return (
+            <div key={rowIdx} style={S.seatBlockRow}>
+              {[leftBlock, rightBlock].map((block, bi) => (
+                <div key={bi} style={S.seatGrid}>
+                  {block.map((seatId) => {
+                    const st = adminView
+                      ? (Object.values(taken).includes(seatId) ? "taken" : "empty")
+                      : seatStatus(seatId);
+                    const sel = selectedSeat === seatId;
+                    return (
+                      <button
+                        key={seatId}
+                        style={{ ...S.seat(st, sel), cursor: selectable ? S.seat(st, sel).cursor : "default" }}
+                        disabled={!selectable}
+                        onClick={() => {
+                          if (!selectable) return;
+                          if (st === "taken" || mySeat) return;
+                          setSelectedSeat(sel ? null : seatId);
+                        }}
+                        aria-label={`${seatId}番席`}
+                      >
+                        <span style={{ fontSize: 12 }}>{st === "mine" ? "🟢" : st === "taken" ? "🔴" : "🪑"}</span>
+                        <span>{seatId}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+
   if (screen === "adminLogin") return (
     <div style={S.app}>
       <div style={{ marginBottom: 20 }}>
@@ -169,48 +220,26 @@ export default function App() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr 0.8fr 0.6fr 0.5fr", background: "#f1efe8", padding: "8px 12px", fontSize: 11, fontWeight: 500, color: "#5f5e5a" }}>
           <span>名前</span><span>電話番号</span><span>学校</span><span>身分</span><span>座席</span>
         </div>
-        {allUsers.map((u, i) => (
-          <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr 0.8fr 0.6fr 0.5fr", padding: "9px 12px", fontSize: 12, borderTop: "0.5px solid #f1efe8", background: i % 2 === 0 ? "#fff" : "#fafaf8", alignItems: "center" }}>
-            <span style={{ fontWeight: 500 }}>{u.name}</span>
-            <span style={{ color: "#5f5e5a" }}>{u.phone}</span>
-            <span style={{ color: "#5f5e5a" }}>{u.school}</span>
-            <span><span style={{ background: "#f1efe8", borderRadius: 4, padding: "1px 6px", fontSize: 10 }}>{u.status}</span></span>
-            <span style={{ color: "#028090", fontWeight: 500 }}>{i + 1}番</span>
-          </div>
-        ))}
-      </div>
-
-      {/* 座席マップ */}
-      <div style={S.sectionTitle}>座席マップ（管理者視点）</div>
-      <div style={S.seatGrid}>
-        {Array.from({ length: TOTAL_SEATS }, (_, i) => i + 1).map((i) => {
-          const st = seatStatus(i);
-          const isAdminView = Object.values(DEMO_TAKEN).includes(i) || st === "taken";
+        {allUsers.map((u, i) => {
+          const seatId = Object.values(DEMO_TAKEN)[i] || "-";
           return (
-            <div key={i} style={{ ...S.seat(isAdminView ? "taken" : "empty", false), cursor: "default" }}>
-              <span style={{ fontSize: 14 }}>{isAdminView ? "🔴" : "🪑"}</span>
-              <span>{i}</span>
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr 0.8fr 0.6fr 0.5fr", padding: "9px 12px", fontSize: 12, borderTop: "0.5px solid #f1efe8", background: i % 2 === 0 ? "#fff" : "#fafaf8", alignItems: "center" }}>
+              <span style={{ fontWeight: 500 }}>{u.name}</span>
+              <span style={{ color: "#5f5e5a" }}>{u.phone}</span>
+              <span style={{ color: "#5f5e5a" }}>{u.school}</span>
+              <span><span style={{ background: "#f1efe8", borderRadius: 4, padding: "1px 6px", fontSize: 10 }}>{u.status}</span></span>
+              <span style={{ color: "#028090", fontWeight: 500 }}>{seatId}</span>
             </div>
           );
         })}
       </div>
+
+      {/* 座席マップ */}
+      <div style={S.sectionTitle}>座席マップ（管理者視点）</div>
+      {renderSeatMap({ selectable: false, adminView: true })}
       <div style={S.legend}>
         <div style={S.legendItem}><div style={S.legendDot("#fff", "#d3d1c7")} />空き</div>
         <div style={S.legendItem}><div style={S.legendDot("#FCEBEB", "#F09595")} />使用中</div>
-      </div>
-
-      {/* 強制退室ボタン（管理者のみ） */}
-      <div style={{ ...S.sectionTitle, marginTop: 4 }}>利用者管理</div>
-      <div style={{ border: "0.5px solid #e0ddd5", borderRadius: 10, overflow: "hidden" }}>
-        {allUsers.map((u, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 12px", fontSize: 12, borderTop: i > 0 ? "0.5px solid #f1efe8" : "none", background: i % 2 === 0 ? "#fff" : "#fafaf8" }}>
-            <span>{u.name}（{i + 1}番席）</span>
-            <button style={{ padding: "3px 10px", borderRadius: 6, border: "0.5px solid #f09595", background: "#fcebeb", color: "#A32D2D", fontSize: 11, cursor: "pointer" }}
-              onClick={() => alert(`${u.name}さんを強制退室しました（デモ）`)}>
-              強制退室
-            </button>
-          </div>
-        ))}
       </div>
     </div>
   );
@@ -250,13 +279,6 @@ export default function App() {
                 {["小学生","中学生","高校生","大学生","その他"].map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
-            <div style={S.formGroup}>
-              <label style={S.label}>年齢</label>
-              <select style={S.select} value={regAge} onChange={e => setRegAge(e.target.value)}>
-                <option value="">選択してください</option>
-                {[10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25].map(n => <option key={n}>{n}</option>)}
-              </select>
-            </div>
             <button style={S.btnPrimary(false)} onClick={doRegister}>登録する</button>
           </>
         )}
@@ -277,7 +299,7 @@ export default function App() {
         <div style={S.avatar}>{initials}</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 500 }}>{currentUser.name}</div>
-          <div style={S.sub}>{currentUser.status} · {currentUser.school} · {currentUser.age}歳</div>
+          <div style={S.sub}>{currentUser.status} · {currentUser.school}</div>
         </div>
         <button style={S.btnGhost} onClick={doLogout}>ログアウト</button>
       </div>
@@ -291,27 +313,14 @@ export default function App() {
 
       {mySeat && (
         <div style={S.checkinBox}>
-          <div style={{ fontSize: 28, fontWeight: 500, color: "#27500A" }}>{mySeat}番</div>
+          <div style={{ fontSize: 28, fontWeight: 500, color: "#27500A" }}>{mySeat}</div>
           <div style={{ fontSize: 12, color: "#3B6D11", marginTop: 4 }}>を利用中</div>
         </div>
       )}
       {freeCount === 0 && !mySeat && <div style={S.noticeFull}>⚠ 満席です。今日は来るのを控えてください。</div>}
 
       <div style={S.sectionTitle}>{mySeat ? "座席の利用状況" : "座席を選んでチェックイン"}</div>
-      <div style={S.seatGrid}>
-        {Array.from({ length: TOTAL_SEATS }, (_, i) => i + 1).map((i) => {
-          const st = seatStatus(i);
-          const sel = selectedSeat === i;
-          return (
-            <button key={i} style={S.seat(st, sel)}
-              onClick={() => { if (st === "taken" || mySeat) return; setSelectedSeat(sel ? null : i); }}
-              aria-label={`${i}番席`}>
-              <span style={{ fontSize: 14 }}>{st === "mine" ? "🟢" : st === "taken" ? "🔴" : "🪑"}</span>
-              <span>{i}</span>
-            </button>
-          );
-        })}
-      </div>
+      {renderSeatMap({ selectable: true, adminView: false })}
 
       <div style={S.legend}>
         <div style={S.legendItem}><div style={S.legendDot("#fff", "#d3d1c7")} />空き</div>
